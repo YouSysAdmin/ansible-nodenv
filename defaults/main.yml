@@ -1,0 +1,32 @@
+---
+nodenv:
+  version: v1.4.0
+  default_nodejs: 16.14.0
+  nodejs:
+    - version: 16.14.0
+
+nodenv_clean_up: false
+
+nodenv_repo: 'https://github.com/nodenv/nodenv.git'
+
+nodenv_plugins:
+  - { name: 'nodenv-vars', repo: 'https://github.com/nodenv/nodenv-vars.git', version: 'master' }
+  - { name: 'node-build', repo: 'https://github.com/nodenv/node-build.git', version: 'master' }
+  - { name: 'nodenv-default-packages', repo: 'https://github.com/nodenv/nodenv-default-packages.git', version: 'master' }
+  - { name: 'nodenv-update', repo: 'https://github.com/nodenv/nodenv-update.git', version: 'master' }
+
+nodenv_root: "~/.nodenv"
+
+nodenv_users: []
+
+nodenv_extra_depends: []
+nodenv_apt_packages:
+  - build-essential
+  - git
+  - libcurl4-openssl-dev
+  - libffi-dev
+  - libreadline-dev
+  - libssl-dev
+  - libxml2-dev
+  - libxslt1-dev
+  - zlib1g-dev

@@ -1,0 +1,22 @@
+---
+- name: check nodejs versions installed for select users
+  shell: $SHELL -lc 'source /etc/profile.d/nodenv.sh && nodenv versions --bare'
+  become: yes
+  become_user: '{{ user }}'
+  register: nodejs_installed_versions
+
+- name: check which old nodejs to remove for select users
+  set_fact:
+    drop_nodejs: '{{ nodejs_installed_versions.stdout_lines|difference(nodenv_nodejs_versions) }}' #"{{ '{'+item[0]|list|difference(item[2])|join(',')+'}'}}"
+
+- name: NodeJS versions to delete
+  debug:
+    var: drop_nodejs
+  when: drop_nodejs | length > 0
+
+- name: remove old nodejs
+  shell: $SHELL -lc "rm -rf {{ nodenv_root }}/versions/{{ item }}"
+  become: yes
+  become_user: "{{ user }}"
+  with_items: "{{ drop_nodejs }}"
+  when: drop_nodejs | length > 0

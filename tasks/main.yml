@@ -1,0 +1,14 @@
+---
+- include: default.yml
+
+- include: apt_build_depends.yml
+  when: ansible_pkg_mgr == 'apt'
+
+- include: install.yml
+
+- name: cleuaup old nodejs versions
+  include_tasks: cleanup.yml
+  when: nodenv_clean_up
+  loop: '{{ nodenv_users }}'
+  loop_control:
+    loop_var: user

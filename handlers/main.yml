@@ -1,0 +1,7 @@
+---
+# handlers file for nodenv
+- name: rehash nodenv
+  command:  'nodenv rehash'
+  environment:
+    RBENV_ROOT: '{{ nodenv_root }}'
+

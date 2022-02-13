@@ -1,0 +1,80 @@
+---
+- name: checkout nodenv_repo for selected users
+  git:
+    repo: '{{ nodenv_repo }}'
+    dest: '{{ nodenv_root }}'
+    version: '{{ nodenv.version }}'
+    accept_hostkey: yes
+    force: yes
+  with_items: '{{ nodenv_users }}'
+  become: yes
+  become_user: '{{ item }}'
+
+- name: create plugins directory for selected users
+  file:
+    state: directory
+    path: '{{ nodenv_root }}/plugins'
+  with_items: '{{ nodenv_users }}'
+  become: yes
+  become_user: '{{ item }}'
+
+- name: install plugins for selected users
+  git:
+    repo: '{{ item[1].repo }}'
+    dest: '{{ nodenv_root }}/plugins/{{ item[1].name }}'
+    version: '{{ item[1].version }}'
+    accept_hostkey: yes
+    force: yes
+  with_nested:
+    - '{{ nodenv_users }}'
+    - '{{ nodenv_plugins }}'
+  become: yes
+  become_user: '{{ item[0] }}'
+
+- name: add nodenv initialization to profile system-wide
+  template:
+    src: 'nodenv_init.sh.j2'
+    dest: '/etc/profile.d/nodenv.sh'
+    owner: root
+    group: root
+    mode: 0755
+  become: yes
+
+- name: set default-npm for select users
+  copy:
+    src: 'default-npm'
+    dest: '{{ nodenv_root }}/default-packages'
+  with_items: '{{ nodenv_users }}'
+  become: yes
+  become_user: '{{ item }}'
+
+- name: install nodejs for select users
+  shell: $SHELL -lc "source /etc/profile.d/nodenv.sh && nodenv install --skip-existing {{ item[1] }}"
+  become: yes
+  become_user: "{{ item[0] }}"
+  with_nested:
+    - "{{ nodenv_users }}"
+    - "{{ nodenv_nodejs_versions }}"
+  ignore_errors: yes
+  environment: "{{ {} | combine({ 'TMPDIR': nodenv_tmpdir }) }}"
+
+- name: check if user nodejs version is {{ nodenv.default_nodejs }}
+  shell: $SHELL -lc "source /etc/profile.d/nodenv.sh && nodenv version | cut -d ' ' -f 1 | grep -Fx '{{ nodenv.default_nodejs }}'"
+  become: yes
+  become_user: "{{ item }}"
+  with_items: "{{ nodenv_users }}"
+  register: nodejs_selected
+  changed_when: false
+  ignore_errors: yes
+  failed_when: false
+  check_mode: no
+
+- name: set nodejs {{ nodenv.default_nodejs }} for select users
+  shell: $SHELL -lc "{{ nodenv_root }}/bin/nodenv global {{ nodenv.default_nodejs }} && nodenv rehash"
+  become: yes
+  become_user: "{{ item[1] }}"
+  with_together:
+    - "{{ nodejs_selected.results }}"
+    - "{{ nodenv_users }}"
+  when: item[0].rc != 0
+  ignore_errors: yes
